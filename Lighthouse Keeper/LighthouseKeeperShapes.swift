@@ -527,43 +527,46 @@ struct FlagGlyph: View {
     let nation: String
     let size: CGSize
     var body: some View {
-        Canvas { ctx, sz in
-            let w = sz.width, h = sz.height
-            let scheme = FlagGlyph.schemeFor(nation)
+        let scheme = FlagGlyph.schemeFor(nation)
+        let w = size.width
+        let h = size.height
+        ZStack {
             // Background field
-            ctx.fill(Path(CGRect(x: 0, y: 0, width: w, height: h)), with: .color(scheme.0))
+            Rectangle().fill(scheme.0)
             // Pattern
             switch scheme.3 {
             case .horizontal:
-                ctx.fill(Path(CGRect(x: 0, y: h / 3, width: w, height: h / 3)), with: .color(scheme.1))
+                Rectangle().fill(scheme.1)
+                    .frame(width: w, height: h / 3)
             case .vertical:
-                ctx.fill(Path(CGRect(x: w / 3, y: 0, width: w / 3, height: h)), with: .color(scheme.1))
+                Rectangle().fill(scheme.1)
+                    .frame(width: w / 3, height: h)
             case .canton:
-                ctx.fill(Path(CGRect(x: 0, y: 0, width: w * 0.45, height: h * 0.55)), with: .color(scheme.1))
-                var star = Path(ellipseIn: CGRect(x: w * 0.10, y: h * 0.12, width: w * 0.20, height: w * 0.20))
-                ctx.fill(star, with: .color(scheme.2))
+                ZStack(alignment: .topLeading) {
+                    Color.clear
+                    Rectangle().fill(scheme.1)
+                        .frame(width: w * 0.45, height: h * 0.55)
+                    Circle().fill(scheme.2)
+                        .frame(width: w * 0.20, height: w * 0.20)
+                        .offset(x: w * 0.10, y: h * 0.12)
+                }
+                .frame(width: w, height: h)
             case .saltire:
-                var x1 = Path()
-                x1.move(to: CGPoint(x: 0, y: 0))
-                x1.addLine(to: CGPoint(x: w, y: h))
-                x1.move(to: CGPoint(x: w, y: 0))
-                x1.addLine(to: CGPoint(x: 0, y: h))
-                ctx.stroke(x1, with: .color(scheme.1), lineWidth: h * 0.18)
+                FlagSaltireShape()
+                    .stroke(scheme.1, lineWidth: max(2, h * 0.18))
+                    .frame(width: w, height: h)
             case .circle:
-                var c = Path(ellipseIn: CGRect(x: w * 0.32, y: h * 0.20, width: w * 0.36, height: w * 0.36))
-                ctx.fill(c, with: .color(scheme.1))
+                Circle().fill(scheme.1)
+                    .frame(width: w * 0.36, height: w * 0.36)
             case .triangle:
-                var t = Path()
-                t.move(to: CGPoint(x: 0, y: 0))
-                t.addLine(to: CGPoint(x: w * 0.55, y: h / 2))
-                t.addLine(to: CGPoint(x: 0, y: h))
-                t.closeSubpath()
-                ctx.fill(t, with: .color(scheme.1))
+                FlagTriangleShape()
+                    .fill(scheme.1)
+                    .frame(width: w, height: h)
             }
-            // Border
-            ctx.stroke(Path(CGRect(x: 0, y: 0, width: w, height: h)), with: .color(LighthouseKeeperPalette.inkMid), lineWidth: 0.5)
         }
-        .frame(width: size.width, height: size.height)
+        .frame(width: w, height: h)
+        .overlay(Rectangle().stroke(LighthouseKeeperPalette.inkMid, lineWidth: 0.5))
+        .clipped()
     }
 
     enum FlagPattern { case horizontal, vertical, canton, saltire, circle, triangle }
@@ -648,6 +651,30 @@ struct XGlyph: View {
             ctx.stroke(p, with: .color(color), style: StrokeStyle(lineWidth: max(1.2, w * 0.10), lineCap: .round))
         }
         .frame(width: size, height: size)
+    }
+}
+
+// MARK: - Flag pattern shapes
+
+struct FlagSaltireShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        p.move(to: CGPoint(x: rect.maxX, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        return p
+    }
+}
+
+struct FlagTriangleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.minX + rect.width * 0.55, y: rect.midY))
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        p.closeSubpath()
+        return p
     }
 }
 
