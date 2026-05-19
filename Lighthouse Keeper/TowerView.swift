@@ -416,10 +416,10 @@ struct NightShiftPanel: View {
             }
             .frame(height: 240)
 
-            if let cur = currentShipId {
+            if let beamShip = beamTargetShipId {
                 VStack(spacing: 6) {
                     Button {
-                        activeSheet = .shipGuess(shipId: cur)
+                        activeSheet = .shipGuess(shipId: beamShip)
                     } label: {
                         HStack {
                             Text("Identify Ship in Beam")
@@ -448,6 +448,14 @@ struct NightShiftPanel: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
+            } else if firstUnresolvedShipId != nil {
+                Text("Aim the beam at a ship's silhouette to identify it.")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(LighthouseKeeperPalette.inkMid)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+                    .background(LighthouseKeeperPalette.surfaceSunken)
+                    .cornerRadius(6)
             }
             if let m = lastIdMessage {
                 Text(m)
@@ -563,7 +571,7 @@ struct NightShiftPanel: View {
     }
 
     private func armShipWindowIfNeeded() {
-        if currentShipId != nil {
+        if firstUnresolvedShipId != nil {
             if shipWindowDeadline == nil {
                 shipWindowDeadline = Date().addingTimeInterval(shipWindowSeconds)
             }
@@ -579,7 +587,7 @@ struct NightShiftPanel: View {
     }
 
     private func checkShipWindowExpiry() {
-        guard let deadline = shipWindowDeadline, let cur = currentShipId else { return }
+        guard let deadline = shipWindowDeadline, let cur = firstUnresolvedShipId else { return }
         if shipWindowTickNow >= deadline {
             // Time out: ship passes anonymously.
             _ = store.attemptIdentifyShip(cur, correctGuess: false)
@@ -589,16 +597,26 @@ struct NightShiftPanel: View {
         }
     }
 
-    private var currentShipId: String? {
-        let resolved = store.state.tonightShipsResolved.count
-        if resolved >= store.state.tonightShipQueue.count { return nil }
-        return store.state.tonightShipQueue[resolved]
+    private var firstUnresolvedShipId: String? {
+        let resolvedSet = Set(store.state.tonightShipsResolved)
+        return store.state.tonightShipQueue.first { !resolvedSet.contains($0) }
+    }
+
+    private var beamTargetShipId: String? {
+        // Match the angle scheme used in BeamCanvas: idx * 50 - 150
+        for (idx, shipId) in visibleQueue.enumerated() {
+            let baseAngle: Double = -150 + Double(idx) * 50
+            let diff = (baseAngle - beamAngle).truncatingRemainder(dividingBy: 360)
+            let norm = ((diff + 540).truncatingRemainder(dividingBy: 360)) - 180
+            if abs(norm) <= 25 { return shipId }
+        }
+        return nil
     }
 
     private var visibleQueue: [String] {
-        // Up to 3 ships visible at a time: the next unresolved + 2 upcoming
-        let resolved = store.state.tonightShipsResolved.count
-        let upcoming = store.state.tonightShipQueue.dropFirst(resolved)
+        // Up to 3 unresolved ships visible at a time
+        let resolvedSet = Set(store.state.tonightShipsResolved)
+        let upcoming = store.state.tonightShipQueue.filter { !resolvedSet.contains($0) }
         return Array(upcoming.prefix(3))
     }
 }
