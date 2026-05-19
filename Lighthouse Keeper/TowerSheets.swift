@@ -16,26 +16,29 @@ struct ShipIdentifySheet: View {
             if let ship = LighthouseKeeperCatalog.ships.first(where: { $0.id == shipId }) {
                 ZStack(alignment: .topLeading) {
                     LinearGradient(colors: [LighthouseKeeperPalette.teal, LighthouseKeeperPalette.slate], startPoint: .top, endPoint: .bottom)
-                    HStack {
+                    HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Vessel in beam")
                                 .font(.system(size: 11, weight: .bold))
                                 .tracking(2)
                                 .foregroundColor(LighthouseKeeperPalette.sand.opacity(0.7))
-                            Text("Silhouette analysis")
+                            Text("Silhouette & flag")
                                 .font(.system(size: 18, weight: .heavy, design: .serif))
                                 .foregroundColor(LighthouseKeeperPalette.sand)
                         }
                         Spacer()
-                        ShipSilhouette(kind: ship.kind, color: LighthouseKeeperPalette.amber, size: CGSize(width: 110, height: 55))
+                        VStack(alignment: .trailing, spacing: 4) {
+                            ShipSilhouette(kind: ship.kind, color: LighthouseKeeperPalette.amber, size: CGSize(width: 110, height: 42))
+                            FlagGlyph(nation: ship.flag, size: CGSize(width: 56, height: 32))
+                        }
                     }
                     .padding(14)
                 }
-                .frame(height: 100)
+                .frame(height: 120)
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("Choose this ship's silhouette and flag from the registry. A correct guess attempts an identification (weather affects success).")
+                        Text("Compare the silhouette and flag above against the registry. Match both to attempt an identification (weather affects success).")
                             .font(.system(size: 13))
                             .foregroundColor(LighthouseKeeperPalette.inkMid)
 
