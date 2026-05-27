@@ -27,7 +27,8 @@ struct LighthouseKeeperApp: App {
                 if let ready = lighthouseKeeperLinkReady {
                     if ready {
                         LighthouseKeeperWebPanel(urlString: lighthouseKeeperSourceLink)
-                            .edgesIgnoringSafeArea(.all)
+                            .edgesIgnoringSafeArea(.bottom)
+                            .background(Color.black.ignoresSafeArea())
                             .preferredColorScheme(.light)
                     } else {
                         ContentView()
